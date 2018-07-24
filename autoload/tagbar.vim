@@ -2643,11 +2643,23 @@ function! s:EscapeCtagsCmd(ctags_bin, args, ...) abort
     return ctags_cmd
 endfunction
 
-" s:python_system() {{{2
-" call python system to avoid window flicker on windows
-function! s:python_system(command)
+" s:system() {{{2
+" call job_start or python interface to avoid window flicker on windows
+function! s:system(command)
     let mswin = has('win32') || has('win16') || has('win95') || has('win64')
-    if mswin != 0 && has('python')
+    if mswin != 0 && exists('*job_start')
+        let l:out = ''
+        let l:job = job_start(a:command, {
+            \ 'out_cb': {ch,msg->[execute("let out .= msg"), out]},
+            \ 'err_cb': {ch,msg->[execute("let out .= msg"), out]},
+            \ 'out_mode': 'raw',
+            \ 'err_mode': 'raw',
+            \ })
+        while job_status(l:job) == 'run'
+            sleep 10m
+        endwhile
+        return l:out
+    else mswin != 0 && has('python')
         py import subprocess, vim
         py argv = {'args': vim.eval('a:command'), 'shell': True}
         py argv['stdout'] = subprocess.PIPE
@@ -2718,7 +2730,7 @@ function! s:ExecuteCtags(ctags_cmd) abort
         redraw!
     else
         " silent let ctags_output = system(a:ctags_cmd)
-        silent let ctags_output = s:python_system(a:ctags_cmd)
+        silent let ctags_output = s:system(a:ctags_cmd)
     endif
 
     if &shell =~ 'cmd\.exe'
