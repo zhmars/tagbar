@@ -2659,7 +2659,7 @@ function! s:system(command)
             sleep 10m
         endwhile
         return l:out
-    else mswin != 0 && has('python')
+    elseif mswin != 0 && has('python')
         py import subprocess, vim
         py argv = {'args': vim.eval('a:command'), 'shell': True}
         py argv['stdout'] = subprocess.PIPE
