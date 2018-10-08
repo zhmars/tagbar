@@ -2646,37 +2646,21 @@ endfunction
 " s:system() {{{2
 " call job_start or python interface to avoid window flicker on windows
 function! s:system(command)
-    let mswin = has('win32') || has('win16') || has('win95') || has('win64')
-    if mswin != 0 && exists('*job_start')
-        let l:out = ''
-        let l:job = job_start(a:command, {
-            \ 'out_cb': {ch,msg->[execute("let out .= msg"), out]},
-            \ 'err_cb': {ch,msg->[execute("let out .= msg"), out]},
-            \ 'out_mode': 'raw',
-            \ 'err_mode': 'raw',
-            \ })
-        while job_status(l:job) == 'run'
-            sleep 10m
-        endwhile
-        return l:out
-    elseif mswin != 0 && has('python')
-        py import subprocess, vim
-        py argv = {'args': vim.eval('a:command'), 'shell': True}
-        py argv['stdout'] = subprocess.PIPE
-        py argv['stderr'] = subprocess.STDOUT
-        py p = subprocess.Popen(**argv)
-        py text = p.stdout.read()
-        py p.stdout.close()
-        py p.wait()
-        if has('patch-7.4.145') || v:version >= 800
-            let l:text = pyeval('text')
-        else
-            py text = text.replace('\\', '\\\\').replace('"', '\\"')
-            py text = text.replace('\n', '\\n').replace('\r', '\\r')
-            py vim.command('let l:text = "%s"'%text)
-        endif
-        return l:text
-    elseif mswin != 0 && has('python3')
+    let mswin = has('win32')
+    " if mswin && exists('*job_start')
+    "     let l:out = ''
+    "     let l:job = job_start(a:command, {
+    "         \ 'out_cb': {ch,msg->[execute("let out .= msg"), out]},
+    "         \ 'err_cb': {ch,msg->[execute("let out .= msg"), out]},
+    "         \ 'out_mode': 'raw',
+    "         \ 'err_mode': 'raw',
+    "         \ })
+    "     while job_status(l:job) == 'run'
+    "         sleep 10m
+    "     endwhile
+    "     return l:out
+    " elseif mswin && has('python3')
+    if mswin && has('python3')
         py3 import subprocess, vim
         py3 argv = {'args': vim.eval('a:command'), 'shell': True}
         py3 argv['stdout'] = subprocess.PIPE
@@ -2691,6 +2675,23 @@ function! s:system(command)
             py3 text = text.replace('\\', '\\\\').replace('"', '\\"')
             py3 text = text.replace('\n', '\\n').replace('\r', '\\r')
             py3 vim.command('let l:text = "%s"'%text)
+        endif
+        return l:text
+    elseif mswin && has('python')
+        py import subprocess, vim
+        py argv = {'args': vim.eval('a:command'), 'shell': True}
+        py argv['stdout'] = subprocess.PIPE
+        py argv['stderr'] = subprocess.STDOUT
+        py p = subprocess.Popen(**argv)
+        py text = p.stdout.read()
+        py p.stdout.close()
+        py p.wait()
+        if has('patch-7.4.145') || v:version >= 800
+            let l:text = pyeval('text')
+        else
+            py text = text.replace('\\', '\\\\').replace('"', '\\"')
+            py text = text.replace('\n', '\\n').replace('\r', '\\r')
+            py vim.command('let l:text = "%s"'%text)
         endif
         return l:text
     else
